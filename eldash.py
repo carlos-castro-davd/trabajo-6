@@ -14,6 +14,7 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 import base64
 import plotly.io as pio
+from joblib import load
 
 # naming a layout theme for future reference
 pio.templates["google"] = go.layout.Template(
@@ -96,6 +97,26 @@ diccionario_resultdos = {
     }
 }
 
+df_m = pd.DataFrame(diccionario_resultdos).transpose()
+df_m['accuracy']  = (df_m.TP + df_m.TN)/(df_m.TP + df_m.TN + df_m.FP + df_m.FN)
+df_m['recall']    = (df_m.TP)/(df_m.TP + df_m.FN)
+df_m['precision'] = (df_m.TP)/(df_m.TP + df_m.FP)
+
+common_dropdown_style = {
+                            'color':'#121212',
+                            'background-color': '#FFFFFF',
+                            #"background-image": "linear-gradient(90deg,#82e0aa,#f9e79f)",
+                            'width':'200px',
+                            'margin':'auto',
+                            'margin-bottom':'10px',
+                            'margin-top':'5px',
+                            "font-size": "20px",
+                            "border-radius":"0px",
+                            "border-width": "0px 0px 4px 0px",
+                            "border-color": "#58d68d",
+                            "font-weight": "bold",
+                            #"padding-top":"10px"
+                        }
 #encoded_image = base64.b64encode(open('assets/search.svg', 'rb').read()).decode()
 
 app.layout = html.Div([
@@ -172,10 +193,19 @@ def render_content(tab):
                             for x in ['Total Transferido', 'Balance Old Origen','Balance New Origen','Balance Old Destino','Balance New Destino','Cambio en Origen', 'Cambio en Destino']],
                     value='Total Transferido', 
                     style={
-                        'background-color': '#656565',
-                        'color':'black',
-                        'width':'300px',
+                        'color':'#121212',
+                        'background-color': '#FFFFFF',
+                        #"background-image": "linear-gradient(90deg,#82e0aa,#f9e79f)",
+                        'width':'400px',
                         'margin':'auto',
+                        'margin-bottom':'10px',
+                        'margin-top':'10px',
+                        "font-size": "20px",
+                        "border-radius":"0px",
+                        "border-width": "0px 0px 4px 0px",
+                        "border-color": "#58d68d",
+                        "font-weight": "bold",
+                        #"padding-top":"10px"
                     }
                 ),
                 dcc.Graph(id="box-plot", style={'display':'none'}),
@@ -353,6 +383,19 @@ def render_content(tab):
                     #"border-color": "fuchsia"
                 }
             ),
+            html.Div(
+                children=[' '],
+                style={
+                    "height":"100px",
+                    "display":"block"
+                }
+            ),
+            html.H3(
+                '© Juan Blazquez & Juan Sánchez-Blanco',
+                style={
+                    "text-align":"right",
+                }
+            )
         ],
         style = {
             "width": "100%",
@@ -393,99 +436,323 @@ def render_content(tab):
                     ),
                 ], style={"margin-bottom":"40px"}),
                 html.Div([
-                    html.Div(["Accuracy: 99.9861 %"],
-                        id = "accuracy-label",
+                    html.Div([
+                                dcc.Graph(id="matriz-confu", style={'display':'none'}),
+                            ],
+                            style={
+                                "width":"50%",
+                                "display":"inline-block"
+                            }
+                        ),
+                    html.Div([
+                        html.Div(["Accuracy: 99.9861 %"],
+                            id = "accuracy-label",
+                            style={'display':'none'}
+                        ),
+                        html.Div(["Precision: 90.1439 %"],
+                            id="prec-label",
+                            style={'display':'none'}
+                        ),
+                        html.Div(["Recall: 98.5472 %"],
+                            id="recall-label",
+                            style={'display':'none'}
+                        ),
+                        ],
                         style={
-                            "width":"33%",
+                            "width":"50%",
+                            "margin":"auto",
+                            "font-weight": "bold",
+                            "margin-bottom":"40px",
                             "display":"inline-block",
-                            "text-align":"center",
-                            "font-size": "30px",
-                            "-webkit-text-fill-color": "transparent",
-                            "text-fill-color": "transparent",
-                            "-webkit-background-clip": "text",
-                            "background-clip": "text",
-                            "background-image": "linear-gradient(90deg,#58d68d,#f4d03f)"
+                            "vertical-align":"middle",
+                            "margin-top": "-470px",
                         }
                     ),
-                    html.Div(["Precision: 90.1439 %"],
-                        id="prec-label",
-                        style={
-                            "width":"33%",
-                            "display":"inline-block",
-                            "text-align":"center",
-                            "font-size": "30px",
-                            "-webkit-text-fill-color": "transparent",
-                            "text-fill-color": "transparent",
-                            "-webkit-background-clip": "text",
-                            "background-clip": "text",
-                            "background-image": "linear-gradient(90deg,#f4d03f,#eb984e)"
-                        }
-                    ),
-                    html.Div(["Recall: 98.5472 %"],
-                        id="recall-label",
-                        style={
-                            "width":"33%",
-                            "display":"inline-block",
-                            "text-align":"center",
-                            "font-size": "30px",
-                            "-webkit-text-fill-color": "transparent",
-                            "text-fill-color": "transparent",
-                            "-webkit-background-clip": "text",
-                            "background-clip": "text",
-                            "background-image": "linear-gradient(90deg,#eb984e,#ec7063)"
-                        }
-                    ),
-                    ],
-                    style={
-                        "width":"60%",
-                        "margin":"auto",
-                        "font-weight": "bold",
-                    }
-                ),
+                ],style={
+                    "width":"80%",
+                    "margin":"auto"
+                }),
                 html.Div([
                     html.Div([
-                            dcc.Graph(id="matriz-confu", style={'display':'none'}),
+                            dcc.Graph(id="bar-chart1", style={'display':'none'}),
+                            dcc.Graph(id="bar-chart2", style={'display':'none'}),
+                            dcc.Graph(id="bar-chart3", style={'display':'none'}),
                         ],
                         style={
-                            "width":"50%",
-                            "display":"inline-block"
-                        }
-                    ),
-                    html.Div([
-                            dcc.Graph(id="barplot-modelos", style={'display':'none'}),
-                        ],
-                        style={
-                            "width":"50%",
+                            "width":"100%",
                             "display":"inline-block"
                         }
                     )
-                ], style={"width":"95%"})
+                ], style={"width":"95%"}),
+                html.Div(
+                    children=[' '],
+                    style={
+                        "height":"100px",
+                        "display":"block"
+                    }
+                ),
+                html.H3(
+                    '© Juan Blazquez & Juan Sánchez-Blanco',
+                    style={
+                        "text-align":"right",
+                    }
+                )
             ],
             style = {
                 "width": "100%",
                 "height": "1000px",
                 "text-align": "center",
-                "display": "inline-block"
+                "display": "inline-block",
+                "margin-bottom":"200px",
             },
         )
     elif tab == 'tab-3':
             return html.Div([
-                html.H3('Esto es la Consumición del modelo')
+                html.H2('Predicción de Fraude - Random Forest Classifier'),
+                html.Div([
+                        html.Div(
+                            children=[
+                                html.P("Tipo de Operación:", style={"font-size":"20px"}),
+                                dcc.Dropdown(
+                                    id='input_tipo_operacion', 
+                                    options=[
+                                            {'value': "PAYMENT",  'label': "Payment"}, 
+                                            {'value': "CASH_IN",  'label': "Cash In"},
+                                            {'value': "CASH_OUT", 'label': "Cash Out"},
+                                            {'value': "TRANSFER", 'label': "Transfer"},
+                                            {'value': "DEBIT",    'label': "Debit"}
+                                        ],
+                                    value="PAYMENT", 
+                                    style=common_dropdown_style
+                                    #labelStyle={'display': 'block'}
+                                ),
+                                html.P("Step:", style={"font-size":"20px"}),
+                                dcc.Slider(
+                                    id='step-slider',
+                                    min=1,
+                                    max=750,
+                                    step=1,
+                                    marks={
+                                        0: '0',
+                                        150: '150',
+                                        300: '300',
+                                        450: '450',
+                                        600: '600',
+                                        750: '750',
+                                    },
+                                    value=250,
+                                ),
+                                html.Div(id='step-output-container'),
+
+                                html.P("Amount:", style={"font-size":"20px"}),
+                                dcc.Input(
+                                    id="input_amount",
+                                    type="number",
+                                    min=0,
+                                    max=10e7,
+                                    placeholder="$ Amount",
+                                    value="10000000",
+                                    style=common_dropdown_style
+                                ),
+                                html.Div(['Valor máximo: 100M'],id='amount-output-container', style={"color":"#878787"}),
+
+                                html.P("Old balance origen:", style={"font-size":"20px"}),
+                                dcc.Input(
+                                    id="input_oldbalanceorigen",
+                                    type="number",
+                                    min=0,
+                                    max=6e7,
+                                    placeholder="$ Balance",
+                                    value="10000000",
+                                    style=common_dropdown_style
+                                ),
+                                html.Div(['Valor máximo: 60M'],id='oldbalanceorigen-output-container', style={"color":"#878787"}),
+
+                                html.P("New balance origen:", style={"font-size":"20px"}),
+                                dcc.Input(
+                                    id="input_newbalanceorigen",
+                                    type="number",
+                                    min=0,
+                                    max=5e7,
+                                    placeholder="$ Balance",
+                                    value="8000000",
+                                    style=common_dropdown_style
+                                ),
+                                html.Div(['Valor máximo: 50M'],id='newbalanceorigen-output-container', style={"color":"#878787"}),
+
+                                html.P("Old balance destino:", style={"font-size":"20px"}),
+                                dcc.Input(
+                                    id="input_oldbalancedestino",
+                                    type="number",
+                                    min=0,
+                                    max=4e8,
+                                    placeholder="$ Balance",
+                                    value="100000",
+                                    style=common_dropdown_style
+                                ),
+                                html.Div(['Valor máximo: 400M'],id='oldbalancedestino-output-container', style={"color":"#878787"}),
+
+                                html.P("New balance destino:", style={"font-size":"20px"}),
+                                dcc.Input(
+                                    id="input_newbalancedestino",
+                                    type="number",
+                                    min=0,
+                                    max=4e8,
+                                    placeholder="$ Balance",
+                                    value="2100000",
+                                    style=common_dropdown_style
+                                ),
+                                html.Div(['Valor máximo: 400M'],id='newbalancedestino-output-container', style={"color":"#878787"}),
+
+                                html.P("Flag de Fraude:", style={"font-size":"20px"}),
+                                dcc.RadioItems(
+                                    id='input_flag_fraude', 
+                                    options=[{'value': 0, 'label': "False"}, {'value': 1, 'label': "True"}],
+                                    value=0, 
+                                    labelStyle={'display': 'inline-block'}
+                                ),
+                                
+                            ],
+                            style={
+                                "display":"inline-block",
+                                "float":"left",
+                                "width":"30%",
+                            }
+                        ),
+                        html.Div(
+                            children=[
+                                html.Div(" ", id="modelo_output"),
+                                html.Div(" ", id="modelo_res"),
+                                html.Div(" ", id="modelo_prob")
+                            ],
+                            id="modelo_block",
+                            style={
+                                "display":"inline-block",
+                                "float":"left",
+                                "margin-top":"100px",
+                                "width":"70%",
+                            }
+                        )
+                    ],
+                    style={
+                        "display":"block",
+                        "width":"95%"
+                    }
+                )
             ],
             style = {
                 "width": "100%",
                 "height": "1000px",
                 "text-align": "center",
-                "display": "inline-block"
+                "display": "inline-block",
             },
         )
 
+# MODEL CALLBACK
 @app.callback(
-    [Output("accuracy-label", "children"),
+    Output('modelo_output', 'children'),
+    Output('modelo_output', 'style'),
+    Output('modelo_res', 'children'),
+    Output('modelo_res',    'style'),    
+    Output('modelo_prob', 'children'),
+    Output('modelo_prob',    'style'),
+    #Output('modelo_block',  'style')
+    [
+        Input('input_tipo_operacion', 'value'),
+        Input('step-slider', 'value'),
+        Input('input_amount', 'value'),
+        Input('input_oldbalanceorigen', 'value'),
+        Input('input_newbalanceorigen', 'value'),
+        Input('input_oldbalancedestino', 'value'),
+        Input('input_newbalancedestino', 'value'),
+        Input('input_flag_fraude', 'value')
+    ])
+def prediccion_modelos(operacion,step,amount,oldborig,newborig,oldbdest,newbdest,flag):
+    newstyle={
+        "display":"block",
+        "width":"30%",
+        "margin":"auto",
+        "text-align":"center",
+        "font-size": "80px",
+        "-webkit-text-fill-color": "transparent",
+        "text-fill-color": "transparent",
+        "-webkit-background-clip": "text",
+        "background-clip": "text",
+        "font-weight": "bold",
+    }
+    text_style = {
+        "display":"block",
+        "width":"80%",
+        "font-size": "40px",
+        "margin":"auto",
+        "color":"#878787"
+    }
+    block_style = {
+        "display":"inline-block",
+        "width":"70%",
+        "vertical-align":"top",
+        "height":"500px",
+    }
+    modelo = load('random_forest_sm_final.joblib')
+
+    df=pd.DataFrame(index=range(1))
+    df['step']=int(step)
+    df['amount']=float(amount)
+    df['oldbalanceOrg']=float(oldborig)
+    df['newbalanceOrig']=float(newborig)
+    df['oldbalanceDest']=float(oldbdest)
+    df['newbalanceDest']=float(newbdest)
+    df['isFlaggedFraud']=int(flag)
+    df['CASH_IN']=0
+    df['CASH_OUT']=0
+    df['DEBIT']=0
+    df['PAYMENT']=0
+    df['TRANSFER']=0
+    df['diffOrigen'] = df['newbalanceOrig'] - df['oldbalanceOrg']
+    df['diffDestino'] = df['newbalanceDest'] - df['oldbalanceDest']
+    df['cambioOrigen'] = (df['diffOrigen'] + 0.01)/(df['oldbalanceOrg'] + 1e3)
+    df['cambioDestino'] = (df['diffDestino'] + 0.01)/(df['oldbalanceDest'] + 1e3)
+    df[operacion] = 1
+    #print(df)
+    result = modelo.predict(df)
+    probs  = modelo.predict_proba(df)[0]
+    if result == 1:
+        isfraud = "FRAUDE"
+        newstyle["background-image"] = "linear-gradient(90deg,#eb984e,#ec7063)"
+    else: 
+        isfraud = "LEGAL"
+        newstyle["background-image"] = "linear-gradient(90deg,#82e0aa,#f9e79f)"
+    string_salida = f'La transacción {operacion}, de ${amount} es:'
+    string_probs = f"Legal support: {probs[0]}% Fraud support: {probs[1]}%"
+    probs_style = newstyle.copy()
+    probs_style["font-weight"]=400
+    probs_style["font-size"]="40px"
+    return string_salida, text_style, isfraud, newstyle, string_probs, probs_style #, block_style
+
+# MINI CALLBACKS
+@app.callback(
+    Output('step-output-container', 'children'),
+    [Input('step-slider', 'value')])
+def update_step_output(value):
+    return 'Valor seleccionado: {}'.format(value)
+
+# MODELOS
+@app.callback(
+    [
+    Output("accuracy-label", "children"),
     Output("prec-label","children"),
     Output("recall-label","children"),
     Output("matriz-confu","figure"),
-    Output("matriz-confu","style")
+    Output("matriz-confu","style"),
+    Output("bar-chart1","figure"),
+    Output("bar-chart1","style"),
+    Output("bar-chart2","figure"),
+    Output("bar-chart2","style"),
+    Output("bar-chart3","figure"),
+    Output("bar-chart3","style"),
+    Output("accuracy-label","style"),
+    Output("prec-label","style"),
+    Output("recall-label","style"),
     ],
     [Input("selector-modelo", "value")])
 def report_modelo(modelo):
@@ -552,14 +819,63 @@ def report_modelo(modelo):
             bgcolor="rgba(0,0,0,0)",
             )
 
-    fig.update_layout(title=f'Matriz de Confusión del modelo {datos_modelo["nombre"]}', height=750, 
+    fig.update_layout(title=f'Matriz de Confusión del modelo {datos_modelo["nombre"]}', height=500, 
                       paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                       font_color='white', xaxis_showticklabels = False, yaxis_showticklabels = False,
                       yaxis_fixedrange=True, xaxis_fixedrange=True, xaxis_title="Predicted Labels", 
-                      yaxis_title="True Labels", 
+                      yaxis_title="True Labels", xaxis_showgrid = False, yaxis_showgrid = False,  
                       )
-    fig.update_coloraxes(showscale=False)
-    return f"Accuracy: {round(accuracy,4)} %", f"Precisión: {round(precision,4)} %", f"Recall: {round(recall,4)} %", fig, {'display':'inline-block'}
+    #fig.update_coloraxes(showscale=False)
+    text_style = {"width":"20%",
+                  "vertical-align":"middle",
+                  "display":"inline-block",
+                  "margin-left":"3.33%",
+                  "margin-right":"3.33%",
+                  "text-align":"center",
+                  "font-size": "30px",
+                  "-webkit-text-fill-color": "transparent",
+                  "text-fill-color": "transparent",
+                  "-webkit-background-clip": "text",
+                  "background-clip": "text",}
+    acc_style = text_style.copy()
+    acc_style["background-image"]  = "linear-gradient(90deg,#58d68d,#f4d03f)"
+    rec_style = text_style.copy()
+    rec_style["background-image"]  = "linear-gradient(90deg,#eb984e,#ec7063)"
+    prec_style = text_style.copy()
+    prec_style["background-image"] = "linear-gradient(90deg,#f4d03f,#eb984e)"
+    
+    color_seq = ['#abebc6','#f9e79f', '#fad7a0','#f5cba7','#f5b7b1']
+    lines_seq = ['#58d68d','#f4d03f', '#f39c12','#e67e22','#ec7063']
+    color_seq[df_m.index.get_loc(modelo)] = lines_seq[df_m.index.get_loc(modelo)]
+    #lines_seq[df_m.index.get_loc(modelo)] = '#58d68d'
+
+    bar1 = go.Figure(data=[go.Bar(x=df_m['nombre'],
+                                  y=df_m['accuracy'])]) #hole=.3, pull=pull)])
+    bar2 = go.Figure(data=[go.Bar(x=df_m['nombre'],
+                                  y=df_m['recall'])])    #hole=.3, pull=pull)])
+    bar3 = go.Figure(data=[go.Bar(x=df_m['nombre'],
+                                  y=df_m['precision'])]) #hole=.3, pull=pull)])
+    bar1.update_layout(title=f'Accuracy de los modelos', height=750, 
+                      paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                      font_color='white',
+                      )
+    bar1.update_traces(marker=dict(color=color_seq, line=dict(color=lines_seq, width=4)))
+    bar1.update_yaxes(range=[0.9,1])
+    bar2.update_layout(title=f'Recall de los modelos', height=750, 
+                      paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                      font_color='white'
+                      )
+    bar2.update_traces(marker=dict(color=color_seq, line=dict(color=lines_seq, width=4)))
+    bar2.update_yaxes(range=[0.4,1])
+    bar3.update_layout(title=f'Precisión de los modelos', height=750, 
+                      paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                      font_color='white'
+                      )
+    bar3.update_traces(marker=dict(color=color_seq, line=dict(color=lines_seq, width=4)))
+
+    unified_style = {'display':'inline-block', 'width':'33%'}
+
+    return f"Accuracy: {round(accuracy,4)} %", f"Precisión: {round(precision,4)} %", f"Recall: {round(recall,4)} %", fig, {'display':'inline-block'}, bar1, unified_style, bar3, unified_style, bar2, unified_style, acc_style, prec_style, rec_style
 
 # HISTOGRAMA FRAUDE
 @app.callback(
