@@ -35,7 +35,8 @@ pio.templates.default = "google"
 
 #df = pd.read_csv("StudentsPerformance.csv")
 print("Cargando parquet...")
-df = pd.read_parquet("partitioned/").drop(columns=['partition'])
+#df = pd.read_parquet("partitioned/").drop(columns=['partition'])
+df = pd.read_csv("partitioned/mini.csv").drop(columns=['partition'])
 print("Parquet cargado!!")
 app = dash.Dash()
 server = app.server
