@@ -1,4 +1,5 @@
 # Importamos las librerias mínimas necesarias
+import os
 from os import name
 import pandas as pd
 import numpy as np
@@ -15,6 +16,9 @@ import plotly.express as px
 #import base64
 import plotly.io as pio
 from joblib import load
+import subprocess
+import sys
+subprocess.call([sys.executable, '-m', 'pip', 'install', '{0}=={1}'.format("pyarrow", "6.0.1")])
 
 # naming a layout theme for future reference
 pio.templates["google"] = go.layout.Template(
