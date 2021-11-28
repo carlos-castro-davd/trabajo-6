@@ -97,6 +97,16 @@ diccionario_resultdos = {
     }
 }
 
+averages = (pd.DataFrame([[1.781970e+05,8.328287e+05,855970.228109,1.101421e+06,1.224926e+06],
+                         [1.467967e+06,1.649668e+06,192392.631836,5.442496e+05,1.279708e+06]
+                        ], columns=['amount','oldbalanceOrg','newbalanceOrig','oldbalanceDest','newbalanceDest'])
+                        .transpose()
+                        .reset_index()
+                        .rename(
+                            columns={0:"notFraud",1:"isFraud"}
+                        )
+           )
+
 df_m = pd.DataFrame(diccionario_resultdos).transpose()
 df_m['accuracy']  = (df_m.TP + df_m.TN)/(df_m.TP + df_m.TN + df_m.FP + df_m.FN)
 df_m['recall']    = (df_m.TP)/(df_m.TP + df_m.FN)
@@ -623,7 +633,20 @@ def render_content(tab):
                             children=[
                                 html.Div(" ", id="modelo_output"),
                                 html.Div(" ", id="modelo_res"),
-                                html.Div(" ", id="modelo_prob")
+                                html.Div(" ", id="modelo_prob"),
+                                html.Div(
+                                    children=[
+                                        dcc.Graph(id="polar-chart1", style={'display':'none'}),
+                                        dcc.Graph(id="polar-chart2", style={'display':'none'}),
+                                        dcc.Graph(id="polar-chart3", style={'display':'none'}),
+                                    ],
+                                    style={
+                                        "display":"inline-block",
+                                        "float":"left",
+                                        "margin-top":"50px",
+                                        "width":"100%",
+                                    }
+                                )
                             ],
                             id="modelo_block",
                             style={
@@ -647,6 +670,78 @@ def render_content(tab):
                 "display": "inline-block",
             },
         )
+
+# POLAR CALLBACK
+# MODEL CALLBACK
+@app.callback(
+    Output('polar-chart1', 'figure'),
+    Output('polar-chart1', 'style'),
+    Output('polar-chart2', 'figure'),
+    Output('polar-chart2', 'style'),
+    [
+        Input('input_amount', 'value'),
+        Input('input_oldbalanceorigen', 'value'),
+        Input('input_newbalanceorigen', 'value'),
+        Input('input_oldbalancedestino', 'value'),
+        Input('input_newbalancedestino', 'value')
+    ])
+def plot_polar_charts(amount,oldborig,newborig,oldbdest,newbdest):
+    fig1 = go.Figure(data=[go.Scatterpolar(
+                name="Legal",
+                mode = "lines",
+                r = averages["notFraud"],
+                theta = averages["index"],
+                fill = "toself",
+                fillcolor = "#58d68d",
+                opacity = 0.4,
+            ),
+            go.Scatterpolar(
+                name="Actual",
+                mode = "lines",
+                r = [int(amount)+1,int(oldborig)+1,int(newborig)+1,int(oldbdest)+1,int(newbdest)+1],
+                theta = averages["index"],
+                fill = "toself",
+                fillcolor = "#f4d03f",
+                opacity = 0.4,
+            )
+            ])
+    fig1.update_layout(title=f'Spider Plot Media de No Fraude', height=500, 
+                      paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                      font_color='white', polar = dict(radialaxis_type = "log")
+                      )
+    fig1.update_traces(line_color = "#323232")
+    fig1.update_polars(bgcolor='rgba(0,0,0,0)')
+    fig2 = go.Figure(data=[go.Scatterpolar(
+                name="Fraude",
+                mode = "lines",
+                r = averages["isFraud"],
+                theta = averages["index"],
+                fill = "toself",
+                fillcolor = "#ec7063",
+                opacity = 0.4,
+            ),
+            go.Scatterpolar(
+                name="Actual",
+                mode = "lines",
+                r = [int(amount)+1,int(oldborig)+1,int(newborig)+1,int(oldbdest)+1,int(newbdest)+1],
+                theta = averages["index"],
+                fill = "toself",
+                fillcolor = "#f4d03f",
+                opacity = 0.4,
+            )])
+    fig2.update_layout(title=f'Spider Plot Media de Fraude', height=500, 
+                      paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                      font_color='white', polar = dict(radialaxis_type = "log")
+                      )
+    fig2.update_traces(line_color = "#323232")
+    fig2.update_polars(bgcolor='rgba(0,0,0,0)')
+    
+    unified_style = {
+        "display":"inline-block",
+        "float":"left",
+        "width":"50%"
+    }
+    return fig1,unified_style, fig2,unified_style
 
 # MODEL CALLBACK
 @app.callback(
@@ -695,27 +790,27 @@ def prediccion_modelos(operacion,step,amount,oldborig,newborig,oldbdest,newbdest
     }
     modelo = load('random_forest_sm_final.joblib')
 
-    df=pd.DataFrame(index=range(1))
-    df['step']=int(step)
-    df['amount']=float(amount)
-    df['oldbalanceOrg']=float(oldborig)
-    df['newbalanceOrig']=float(newborig)
-    df['oldbalanceDest']=float(oldbdest)
-    df['newbalanceDest']=float(newbdest)
-    df['isFlaggedFraud']=int(flag)
-    df['CASH_IN']=0
-    df['CASH_OUT']=0
-    df['DEBIT']=0
-    df['PAYMENT']=0
-    df['TRANSFER']=0
-    df['diffOrigen'] = df['newbalanceOrig'] - df['oldbalanceOrg']
-    df['diffDestino'] = df['newbalanceDest'] - df['oldbalanceDest']
-    df['cambioOrigen'] = (df['diffOrigen'] + 0.01)/(df['oldbalanceOrg'] + 1e3)
-    df['cambioDestino'] = (df['diffDestino'] + 0.01)/(df['oldbalanceDest'] + 1e3)
-    df[operacion] = 1
+    df_pred=pd.DataFrame(index=range(1))
+    df_pred['step']=int(step)
+    df_pred['amount']=float(amount)
+    df_pred['oldbalanceOrg']=float(oldborig)
+    df_pred['newbalanceOrig']=float(newborig)
+    df_pred['oldbalanceDest']=float(oldbdest)
+    df_pred['newbalanceDest']=float(newbdest)
+    df_pred['isFlaggedFraud']=int(flag)
+    df_pred['CASH_IN']=0
+    df_pred['CASH_OUT']=0
+    df_pred['DEBIT']=0
+    df_pred['PAYMENT']=0
+    df_pred['TRANSFER']=0
+    df_pred['diffOrigen'] = df_pred['newbalanceOrig'] - df_pred['oldbalanceOrg']
+    df_pred['diffDestino'] = df_pred['newbalanceDest'] - df_pred['oldbalanceDest']
+    df_pred['cambioOrigen'] = (df_pred['diffOrigen'] + 0.01)/(df_pred['oldbalanceOrg'] + 1e3)
+    df_pred['cambioDestino'] = (df_pred['diffDestino'] + 0.01)/(df_pred['oldbalanceDest'] + 1e3)
+    df_pred[operacion] = 1
     #print(df)
-    result = modelo.predict(df)
-    probs  = modelo.predict_proba(df)[0]
+    result = modelo.predict(df_pred)
+    probs  = modelo.predict_proba(df_pred)[0]
     if result == 1:
         isfraud = "FRAUDE"
         newstyle["background-image"] = "linear-gradient(90deg,#eb984e,#ec7063)"
