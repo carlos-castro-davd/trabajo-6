@@ -12,7 +12,7 @@ from dash.dependencies import Input, Output, State
 import logging
 from plotly.subplots import make_subplots
 import plotly.express as px
-import base64
+#import base64
 import plotly.io as pio
 from joblib import load
 
