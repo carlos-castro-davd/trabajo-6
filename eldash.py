@@ -38,11 +38,11 @@ print("Cargando parquet...")
 #df = pd.read_parquet("partitioned/").drop(columns=['partition'])
 df = pd.read_csv("partitioned/mini.csv").drop(columns=['partition'])
 print("Parquet cargado!!")
+
 app = dash.Dash()
 server = app.server
-
 #app.config.suppress_callback_exceptions = True
-app.css.append_css({'external_url': '/resources/style.css'})
+app.css.append_css({'external_url': '/assets/style.css'})
 #app.server.static_folder = 'static'
 
 logging.getLogger('werkzeug').setLevel(logging.INFO)
