@@ -1,1 +1,1 @@
-web:gunicorn eldash:server
+web: gunicorn eldash:server
