@@ -14,36 +14,36 @@ import logging
 from plotly.subplots import make_subplots
 import plotly.express as px
 #import base64
-import plotly.io as pio
+#import plotly.io as pio
 from joblib import load
-import subprocess
-import sys
-subprocess.call([sys.executable, '-m', 'pip', 'install', '{0}=={1}'.format("pyarrow", "6.0.1")])
+#import subprocess
+#import sys
+#subprocess.call([sys.executable, '-m', 'pip', 'install', '{0}=={1}'.format("pyarrow", "6.0.1")])
 
 # naming a layout theme for future reference
-pio.templates["google"] = go.layout.Template(
-    layout_colorway=['#4285F4', '#DB4437', '#F4B400', '#0F9D58',
-                     '#185ABC', '#B31412', '#EA8600', '#137333',
-                     '#d2e3fc', '#ceead6']
-)
+#pio.templates["google"] = go.layout.Template(
+#    layout_colorway=['#4285F4', '#DB4437', '#F4B400', '#0F9D58',
+#                     '#185ABC', '#B31412', '#EA8600', '#137333',
+#                     '#d2e3fc', '#ceead6']
+#)
 
 # setting Google color palette as default
-pio.templates.default = "google"
+#pio.templates.default = "google"
 
 # Para este Dash, vamos a seleccionar un fichero de datos y realizar un dashboard descriptivo
 # sobre un conjunto de datos
 
 #df = pd.read_csv("StudentsPerformance.csv")
-print("Cargando parquet...")
+print("Cargando csv...")
 #df = pd.read_parquet("partitioned/").drop(columns=['partition'])
 df = pd.read_csv("partitioned/mini.csv").drop(columns=['partition'])
 print("Parquet cargado!!")
 
 app = dash.Dash()
 server = app.server
-#app.config.suppress_callback_exceptions = True
+app.config.suppress_callback_exceptions = True
 #app.css.append_css({'external_url': '/assets/style.css'})
-app.css.append_css({'background-color': '#323232'})
+#app.css.append_css({'background-color': '#323232'})
 #app.server.static_folder = 'static'
 
 logging.getLogger('werkzeug').setLevel(logging.INFO)
