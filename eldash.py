@@ -1,5 +1,4 @@
 # Importamos las librerias mínimas necesarias
-import os
 from os import name
 import pandas as pd
 import numpy as np
@@ -13,37 +12,31 @@ from dash.dependencies import Input, Output, State
 import logging
 from plotly.subplots import make_subplots
 import plotly.express as px
-#import base64
-#import plotly.io as pio
+import base64
+import plotly.io as pio
 from joblib import load
-#import subprocess
-#import sys
-#subprocess.call([sys.executable, '-m', 'pip', 'install', '{0}=={1}'.format("pyarrow", "6.0.1")])
 
 # naming a layout theme for future reference
-#pio.templates["google"] = go.layout.Template(
-#    layout_colorway=['#4285F4', '#DB4437', '#F4B400', '#0F9D58',
-#                     '#185ABC', '#B31412', '#EA8600', '#137333',
-#                     '#d2e3fc', '#ceead6']
-#)
+pio.templates["google"] = go.layout.Template(
+    layout_colorway=['#4285F4', '#DB4437', '#F4B400', '#0F9D58',
+                     '#185ABC', '#B31412', '#EA8600', '#137333',
+                     '#d2e3fc', '#ceead6']
+)
 
 # setting Google color palette as default
-#pio.templates.default = "google"
+pio.templates.default = "google"
 
 # Para este Dash, vamos a seleccionar un fichero de datos y realizar un dashboard descriptivo
 # sobre un conjunto de datos
 
 #df = pd.read_csv("StudentsPerformance.csv")
-print("Cargando csv...")
-#df = pd.read_parquet("partitioned/").drop(columns=['partition'])
-df = pd.read_csv("partitioned/mini.csv").drop(columns=['partition'])
-print("Parquet cargado!!")
+df = pd.read_parquet("partitioned/").drop(columns=['partition'])
 
 app = dash.Dash()
 server = app.server
-app.config.suppress_callback_exceptions = True
-#app.css.append_css({'external_url': '/assets/style.css'})
-#app.css.append_css({'background-color': '#323232'})
+
+#app.config.suppress_callback_exceptions = True
+app.css.append_css({'external_url': '/resources/style.css'})
 #app.server.static_folder = 'static'
 
 logging.getLogger('werkzeug').setLevel(logging.INFO)
@@ -103,16 +96,6 @@ diccionario_resultdos = {
         'FN':12,
     }
 }
-
-averages = (pd.DataFrame([[1.781970e+05,8.328287e+05,855970.228109,1.101421e+06,1.224926e+06],
-                         [1.467967e+06,1.649668e+06,192392.631836,5.442496e+05,1.279708e+06]
-                        ], columns=['amount','oldbalanceOrg','newbalanceOrig','oldbalanceDest','newbalanceDest'])
-                        .transpose()
-                        .reset_index()
-                        .rename(
-                            columns={0:"notFraud",1:"isFraud"}
-                        )
-           )
 
 df_m = pd.DataFrame(diccionario_resultdos).transpose()
 df_m['accuracy']  = (df_m.TP + df_m.TN)/(df_m.TP + df_m.TN + df_m.FP + df_m.FN)
@@ -641,28 +624,27 @@ def render_content(tab):
                                 html.Div(" ", id="modelo_output"),
                                 html.Div(" ", id="modelo_res"),
                                 html.Div(" ", id="modelo_prob"),
-                                html.Div(
-                                    children=[
-                                        dcc.Graph(id="polar-chart1", style={'display':'none'}),
-                                        dcc.Graph(id="polar-chart2", style={'display':'none'}),
-                                        dcc.Graph(id="polar-chart3", style={'display':'none'}),
+                                html.H2("Comparación:"),
+                                dcc.Graph(id="spider1", style={'display':'none'}),
+                                dcc.Graph(id="spider2", style={'display':'none'}),
                                     ],
-                                    style={
-                                        "display":"inline-block",
-                                        "float":"left",
-                                        "margin-top":"50px",
-                                        "width":"100%",
-                                    }
-                                )
-                            ],
+                            
                             id="modelo_block",
                             style={
                                 "display":"inline-block",
                                 "float":"left",
                                 "margin-top":"100px",
                                 "width":"70%",
+                                "margin-bottom":"40px"
+                            }
+                        ),
+                        html.H3(
+                            '© Juan Blazquez & Juan Sánchez-Blanco',
+                            style={
+                                "text-align":"right",
                             }
                         )
+                        
                     ],
                     style={
                         "display":"block",
@@ -678,86 +660,6 @@ def render_content(tab):
             },
         )
 
-# POLAR CALLBACK
-# MODEL CALLBACK
-@app.callback(
-    Output('polar-chart1', 'figure'),
-    Output('polar-chart1', 'style'),
-    Output('polar-chart2', 'figure'),
-    Output('polar-chart2', 'style'),
-    [
-        Input('input_amount', 'value'),
-        Input('input_oldbalanceorigen', 'value'),
-        Input('input_newbalanceorigen', 'value'),
-        Input('input_oldbalancedestino', 'value'),
-        Input('input_newbalancedestino', 'value')
-    ])
-def plot_polar_charts(amount,oldborig,newborig,oldbdest,newbdest):
-    fig1 = go.Figure(data=[go.Scatterpolar(
-                name="Legal",
-                mode = "lines",
-                r = averages["notFraud"],
-                theta = ['Amount','Old Balance Origen','New Balance Origen','Old Balance Destino', 'New Balance Destino'],
-                fill = "toself",
-                fillcolor = "#58d68d",
-                marker_color="#fad7a0",
-                marker_line_color="#f39c12",
-                opacity = 0.4,
-            ),
-            go.Scatterpolar(
-                name="Actual",
-                mode = "lines",
-                r = [int(amount)+1,int(oldborig)+1,int(newborig)+1,int(oldbdest)+1,int(newbdest)+1],
-                theta = ['Amount','Old Balance Origen','New Balance Origen','Old Balance Destino', 'New Balance Destino'],
-                fill = "toself",
-                fillcolor = "#f4d03f",
-                marker_color="#fad7a0",
-                marker_line_color="#f39c12",
-                opacity = 0.4,
-            )
-            ])
-    fig1.update_layout(title=f'Spider Plot Media de No Fraude', height=500, 
-                      paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                      font_color='white', polar = dict(radialaxis_type = "log")
-                      )
-    fig1.update_traces(line_color = "#323232")
-    fig1.update_polars(bgcolor='rgba(0,0,0,0)')
-    fig2 = go.Figure(data=[go.Scatterpolar(
-                name="Fraude",
-                mode = "lines",
-                r = averages["isFraud"],
-                theta = ['Amount','Old Balance Origen','New Balance Origen','Old Balance Destino', 'New Balance Destino'],
-                fill = "toself",
-                fillcolor = "#ec7063",
-                marker_color="#f5b7b1",
-                marker_line_color="#ec7063",
-                opacity = 0.4,
-            ),
-            go.Scatterpolar(
-                name="Actual",
-                mode = "lines",
-                r = [int(amount)+1,int(oldborig)+1,int(newborig)+1,int(oldbdest)+1,int(newbdest)+1],
-                theta = ['Amount','Old Balance Origen','New Balance Origen','Old Balance Destino', 'New Balance Destino'],
-                fill = "toself",
-                fillcolor = "#f4d03f",
-                marker_color="#fad7a0",
-                marker_line_color="#f39c12",
-                opacity = 0.4,
-            )])
-    fig2.update_layout(title=f'Spider Plot Media de Fraude', height=500, 
-                      paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                      font_color='white', polar = dict(radialaxis_type = "log")
-                      )
-    fig2.update_traces(line_color = "#323232")
-    fig2.update_polars(bgcolor='rgba(0,0,0,0)')
-    
-    unified_style = {
-        "display":"inline-block",
-        "float":"left",
-        "width":"50%"
-    }
-    return fig1,unified_style, fig2,unified_style
-
 # MODEL CALLBACK
 @app.callback(
     Output('modelo_output', 'children'),
@@ -766,6 +668,10 @@ def plot_polar_charts(amount,oldborig,newborig,oldbdest,newbdest):
     Output('modelo_res',    'style'),    
     Output('modelo_prob', 'children'),
     Output('modelo_prob',    'style'),
+    Output('spider1', 'figure'),
+    Output('spider1',    'style'),    
+    Output('spider2', 'figure'),
+    Output('spider2',    'style'),
     #Output('modelo_block',  'style')
     [
         Input('input_tipo_operacion', 'value'),
@@ -805,27 +711,27 @@ def prediccion_modelos(operacion,step,amount,oldborig,newborig,oldbdest,newbdest
     }
     modelo = load('random_forest_sm_final.joblib')
 
-    df_pred=pd.DataFrame(index=range(1))
-    df_pred['step']=int(step)
-    df_pred['amount']=float(amount)
-    df_pred['oldbalanceOrg']=float(oldborig)
-    df_pred['newbalanceOrig']=float(newborig)
-    df_pred['oldbalanceDest']=float(oldbdest)
-    df_pred['newbalanceDest']=float(newbdest)
-    df_pred['isFlaggedFraud']=int(flag)
-    df_pred['CASH_IN']=0
-    df_pred['CASH_OUT']=0
-    df_pred['DEBIT']=0
-    df_pred['PAYMENT']=0
-    df_pred['TRANSFER']=0
-    df_pred['diffOrigen'] = df_pred['newbalanceOrig'] - df_pred['oldbalanceOrg']
-    df_pred['diffDestino'] = df_pred['newbalanceDest'] - df_pred['oldbalanceDest']
-    df_pred['cambioOrigen'] = (df_pred['diffOrigen'] + 0.01)/(df_pred['oldbalanceOrg'] + 1e3)
-    df_pred['cambioDestino'] = (df_pred['diffDestino'] + 0.01)/(df_pred['oldbalanceDest'] + 1e3)
-    df_pred[operacion] = 1
+    df_m=pd.DataFrame(index=range(1))
+    df_m['step']=int(step)
+    df_m['amount']=float(amount)
+    df_m['oldbalanceOrg']=float(oldborig)
+    df_m['newbalanceOrig']=float(newborig)
+    df_m['oldbalanceDest']=float(oldbdest)
+    df_m['newbalanceDest']=float(newbdest)
+    df_m['isFlaggedFraud']=int(flag)
+    df_m['CASH_IN']=0
+    df_m['CASH_OUT']=0
+    df_m['DEBIT']=0
+    df_m['PAYMENT']=0
+    df_m['TRANSFER']=0
+    df_m['diffOrigen'] = df_m['newbalanceOrig'] - df_m['oldbalanceOrg']
+    df_m['diffDestino'] = df_m['newbalanceDest'] - df_m['oldbalanceDest']
+    df_m['cambioOrigen'] = (df_m['diffOrigen'] + 0.01)/(df_m['oldbalanceOrg'] + 1e3)
+    df_m['cambioDestino'] = (df_m['diffDestino'] + 0.01)/(df_m['oldbalanceDest'] + 1e3)
+    df_m[operacion] = 1
     #print(df)
-    result = modelo.predict(df_pred)
-    probs  = modelo.predict_proba(df_pred)[0]
+    result = modelo.predict(df_m)
+    probs  = modelo.predict_proba(df_m)[0]
     if result == 1:
         isfraud = "FRAUDE"
         newstyle["background-image"] = "linear-gradient(90deg,#eb984e,#ec7063)"
@@ -837,7 +743,64 @@ def prediccion_modelos(operacion,step,amount,oldborig,newborig,oldbdest,newbdest
     probs_style = newstyle.copy()
     probs_style["font-weight"]=400
     probs_style["font-size"]="40px"
-    return string_salida, text_style, isfraud, newstyle, string_probs, probs_style #, block_style
+
+    categories = ['Amount','Old Balance Origen','New Balance Origen','Old Balance Destino', 'New Balance Destino']
+    r1=[ df_m['amount'].values[0]+1,df_m['oldbalanceOrg'].values[0]+1,df_m['newbalanceOrig'].values[0]+1, df_m['oldbalanceDest'].values[0]+1, df_m['newbalanceDest'].values[0]+1]
+    df2=df.groupby("isFraud").mean()
+    r2=[ df2.loc[0]['amount']+1,df2.loc[0]['oldbalanceOrg']+1,df2.loc[0]['newbalanceOrig']+1, df2.loc[0]['oldbalanceDest']+1, df2.loc[0]['newbalanceDest']+1]
+    r3=[ df2.loc[1]['amount']+1,df2.loc[1]['oldbalanceOrg']+1,df2.loc[1]['newbalanceOrig']+1, df2.loc[1]['oldbalanceDest']+1, df2.loc[1]['newbalanceDest']+1]
+    sp1= go.Figure()
+    sp1.add_trace(go.Scatterpolar(
+        r=r1,
+        theta=categories,
+        marker_color="#fad7a0",
+        marker_line_color="#f39c12",
+        fill='toself',
+        name='Predicción'
+    ))
+    sp1.add_trace(go.Scatterpolar(
+        r=r2,
+        theta=categories,
+        marker_color="#abebc6",
+        marker_line_color="#58d68d",
+        fill='toself',
+        name='No fraudes'
+    ))
+
+    sp1.update_layout(title=f'Radar Chart NO Fraude', height=500, 
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font_color='white', xaxis_showticklabels = False, yaxis_showticklabels = False,
+                    yaxis_title="True Labels", xaxis_showgrid = False, yaxis_showgrid = False, polar =dict(radialaxis_type="log")
+                    )
+
+    sp2 = go.Figure()
+    sp2.add_trace(go.Scatterpolar(
+        r=r1,
+        theta=categories,
+        marker_color="#fad7a0",
+        marker_line_color="#f39c12",
+        fill='toself',
+        name='Predicción'
+    ))
+    sp2.add_trace(go.Scatterpolar(
+        r=r3,
+        marker_color="#f5b7b1",
+        marker_line_color="#ec7063",
+        theta=categories,
+        fill='toself',
+        name='Fraudes'
+    ))
+
+    sp2.update_layout(title=f'Radar Chart Fraude', height=500, 
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font_color='white', xaxis_showticklabels = False, yaxis_showticklabels = False,
+                    yaxis_title="True Labels", xaxis_showgrid = False, yaxis_showgrid = False,polar =dict(radialaxis_type="log")
+                    )
+    sp2.update_polars(bgcolor='rgba(0,0,0,0)')
+    sp1.update_polars(bgcolor='rgba(0,0,0,0)')
+    unified_style = {'display':'inline-block', 'width':'48%'}
+
+    return string_salida, text_style, isfraud, newstyle, string_probs, probs_style, sp1, unified_style, sp2, unified_style #, block_style
 
 # MINI CALLBACKS
 @app.callback(
@@ -997,7 +960,7 @@ def generate_fraud_histogram(x, range_amount):
     df_l = df[df.isFraud == 1].append(df[df.isFraud == 0].sample(1000000))
     data = df_l[(df_l['type'].isin(x)) & (df_l.amount <= max_am) & (df_l.amount >= min_am)]
 
-    fig = px.histogram(data, x='amount', color='isFraud', color_discrete_sequence=['#58d68d','#ec7063'])
+    fig = px.histogram(data, x='amount', color='isFraud', color_discrete_sequence=['#ec7063','#58d68d'])
     fig.update_layout(title=f'Histogram - Distribución de transacciones según fraude y cantidad.', height=750, 
                       paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                       font_color='white', 
@@ -1100,7 +1063,7 @@ def generateScatter(x):
 def generate_chart(x):
     data = df.sample(40000)
     data = data[data[diccionario_terminos[x]] != 0]
-    fig = px.box(data, x=diccionario_terminos[x], y='type', color='isFraud', points="all", log_x=True, color_discrete_sequence=['#58d68d','#FFC300'],
+    fig = px.box(data, x=diccionario_terminos[x], y='type', color='isFraud', points="all", log_x=True , color_discrete_sequence=['#58d68d','#FFC300'],
                     labels={
                         "type": "Tipo de Transacción Realizada",
                         diccionario_terminos[x]: x,
