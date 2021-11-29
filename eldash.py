@@ -42,7 +42,7 @@ print("Parquet cargado!!")
 app = dash.Dash()
 server = app.server
 #app.config.suppress_callback_exceptions = True
-app.css.append_css({'external_url': '/assets/style.css'})
+#app.css.append_css({'external_url': '/assets/style.css'})
 app.css.append_css({'background-color': '#323232'})
 #app.server.static_folder = 'static'
 
